@@ -1,0 +1,38 @@
+name: Create Torrent
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_url:
+        description: "Lien direct du fichier"
+        required: true
+      file_name:
+        description: "Nom du fichier"
+        required: true
+      torrent_name:
+        description: "Nom du torrent"
+        required: true
+      piece_size:
+        description: "Taille des morceaux (auto recommandé)"
+        default: "auto"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installer mktorrent
+        run: sudo apt-get update && sudo apt-get install -y mktorrent
+
+      - name: Télécharger le fichier
+        run: wget "${{ github.event.inputs.file_url }}" -O "${{ github.event.inputs.file_name }}"
+
+      - name: Créer le torrent
+        run: mktorrent -a udp://tracker.opentrackr.org:1337/announce \
+                      -o "${{ github.event.inputs.torrent_name }}.torrent" \
+                      "${{ github.event.inputs.file_name }}"
+
+      - name: Télécharger le torrent en résultat
+        uses: actions/upload-artifact@v3
+        with:
+          name: "${{ github.event.inputs.torrent_name }}"
+          path: "${{ github.event.inputs.torrent_name }}.torrent"
